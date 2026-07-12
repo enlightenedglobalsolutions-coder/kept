@@ -121,6 +121,10 @@
   .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
   .photo-add{aspect-ratio:1;border:1.5px dashed var(--line);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:var(--paper-dim)}
   .photo-add svg{width:22px;height:22px}
+  .row{display:flex;align-items:center;gap:12px}
+  .mono{font-family:var(--mono)}
+  .chev{display:inline-flex;flex:none;color:var(--paper-faint)}
+  .chev svg{width:18px;height:18px;display:block}
   .photo-add span{font-family:var(--mono);font-size:9px;letter-spacing:.05em;text-transform:uppercase}
   .ph{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:var(--ink-2) center/cover no-repeat}
   .ph .x{position:absolute;top:4px;right:4px;width:24px;height:24px;border:none;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;display:grid;place-items:center}
@@ -165,6 +169,24 @@
    Single-file PWA. Everything lives on this device.
    ============================================================ */
 const APP_NAME = "Kept";
+/* EGS CORE \u2014 fill in your real BTC / Stripe / PayPal / Wise values below.
+   Interac is already your real EGS details. Identical across every app. */
+const PAYMENT_CONFIG = {
+  interacEmail: 'egspay.pay@gmail.com',
+  interacMemo: 'Kept Donation',
+  btc: 'YOUR_BTC_ADDRESS',
+  stripe: 'STRIPE_PAYMENT_LINK',
+  paypal: 'PAYPAL_DONATE_LINK',
+  wise: 'WISE_PAYMENT_LINK'
+};
+const PAYMENT_TABS = [
+  {id:'interac', label:'\ud83c\udfe6 Interac'},
+  {id:'btc', label:'\u20bf Bitcoin'},
+  {id:'card', label:'\ud83d\udcb3 Credit Card'},
+  {id:'paypal', label:'PayPal'},
+  {id:'wise', label:'Wise'}
+];
+let supportTab = 'interac';
 const I = {
   plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
   back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
@@ -178,6 +200,7 @@ const I = {
   download:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13M7 12l5 5 5-5M5 21h14"/></svg>',
   upload:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V8M7 12l5-5 5 5M5 3h14"/></svg>',
   feather:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4c-6 0-14 4-16 14 3-1 6-2 8-4M8 16l8-8"/></svg>',
+  chevronR:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>',
   rotate:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>'
 };
 
@@ -259,7 +282,7 @@ let view={name:'home',param:null};
 function go(name,param=null){ view={name,param}; render(); window.scrollTo(0,0); }
 function goBack(){
   if(view.name==='person'){ go('home'); return; }
-  const to=({settings:'home', addMemory:'person'})[view.name]||'home';
+  const to=({settings:'home', addMemory:'person', privacy:'settings', support:'settings'})[view.name]||'home';
   go(to);
 }
 
@@ -267,7 +290,7 @@ const $app=document.getElementById('app');
 const $fab=document.getElementById('fab');
 
 function render(){
-  const r=({home:renderHome, person:renderPerson, settings:renderSettings})[view.name]||renderHome;
+  const r=({home:renderHome, person:renderPerson, settings:renderSettings, privacy:renderPrivacy, support:renderSupport})[view.name]||renderHome;
   $app.innerHTML=r(view.param);
   bind();
   hydratePhotos();
@@ -350,17 +373,136 @@ function renderSettings(){
     ${locked?`<button class="btn danger block sm" data-pin-off style="margin-top:-4px">Turn off app lock</button>`:''}
     <div class="card muted" style="font-size:13px;line-height:1.6;margin-top:14px">Everything you add stays on this device. Nothing is uploaded, nothing is tracked, no notifications, ever. This is a quiet place — visit it only when you choose to.</div>
 
-    <div class="sec-head"><span class="label">Your data</span><span class="rule"></span></div>
-    <button class="btn block" data-export>${I.download} Export backup</button>
-    <label class="btn block" style="margin-top:10px">${I.upload} Restore from backup<input type="file" accept="application/json,.json" hidden data-import></label>
+    <div class="sec-head"><span class="label">Support &amp; Backup</span><span class="rule"></span></div>
+    <div class="card row" data-go="support" style="cursor:pointer"><div class="grow"><div>Support &amp; Backup</div><div class="muted" style="font-size:13px">Export/restore your data, and support EGS.</div></div><span class="chev">${I.chevronR}</span></div>
+
+    <div class="sec-head"><span class="label">Privacy</span><span class="rule"></span></div>
+    <div class="card row" data-go="privacy" style="cursor:pointer"><div class="grow"><div>Privacy &amp; how this works</div><div class="muted" style="font-size:13px">What we collect, where your data lives, how we make money.</div></div><span class="chev">${I.chevronR}</span></div>
 
     <div class="sec-head"><span class="label">About</span><span class="rule"></span></div>
     <div class="card muted" style="font-size:13px;line-height:1.6">
       <b style="color:var(--paper)">${esc(APP_NAME)}</b> — a private place for the people you've loved.<br>
-      ${people.length} ${people.length===1?'person':'people'} kept · ${memories.length} ${memories.length===1?'memory':'memories'}.<br>
-      Enlightened Global Solutions · on-device · one-time, no subscription.
+      ${people.length} ${people.length===1?'person':'people'} kept · ${memories.length} ${memories.length===1?'memory':'memories'}.
     </div>
   </div>`;
+}
+
+function renderPrivacy(){
+  return `<div class="topbar">
+    <button class="icon-btn" data-back aria-label="Back">${I.back}</button>
+    <div class="grow"><span class="eyebrow">${esc(APP_NAME)}</span><h1>Privacy</h1></div>
+  </div>
+  <div class="wrap">
+    <div class="sec-head"><span class="label">What we collect</span><span class="rule"></span></div>
+    <div class="card muted" style="font-size:13.5px;line-height:1.6">Nothing. No account, no sign-up, no email. We don't know who you are, and we don't track what you do in this app.</div>
+
+    <div class="sec-head"><span class="label">Where your data lives</span><span class="rule"></span></div>
+    <div class="card muted" style="font-size:13.5px;line-height:1.6">On this device only — the people you've kept, their photos and your memories of them are stored in your phone's own storage. We never receive a copy. There's no server for it to go to.</div>
+
+    <div class="sec-head"><span class="label">When this app touches the internet</span><span class="rule"></span></div>
+    <div class="card muted" style="font-size:13.5px;line-height:1.6">Only to load the app itself from GitHub Pages — no data leaves your phone to do that. That's the whole list. No analytics, no background calls, no hidden pings, no notifications, ever.</div>
+
+    <div class="sec-head"><span class="label">Your data, your control</span><span class="rule"></span></div>
+    <div class="card muted" style="font-size:13.5px;line-height:1.6">Export a full backup any time — it's a plain file you keep, not something on our servers. Restore it whenever you like. Delete anything, any time; nothing needs our permission.</div>
+
+    <div class="sec-head"><span class="label">How EGS makes money</span><span class="rule"></span></div>
+    <div class="card muted" style="font-size:13.5px;line-height:1.6">${esc(APP_NAME)} is free, always. If you'd like to support EGS, that's entirely optional — see Support &amp; Backup in Settings.</div>
+
+    <div class="card row" data-go="support" style="cursor:pointer;margin-top:12px"><div class="grow"><div>Support EGS &amp; back up your data</div><div class="muted" style="font-size:13px">Payment options, export/restore, and how EGS works.</div></div><span class="chev">${I.chevronR}</span></div>
+
+    <div class="card" style="margin-top:6px;text-align:center;font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:var(--paper-faint)">Enlightened Global Solutions · Built in Canada<br>Read the code · check for yourself</div>
+  </div>`;
+}
+
+/* ============================================================
+   APP-SPECIFIC — edit only this block when reusing this page in
+   a new app. Everything in egsSupportCoreHtml() below is meant
+   to be copied verbatim, unedited, into every EGS app.
+   ============================================================ */
+const APP_BACKUP_DESC = "Save the people you've kept — their photos and your memories of them — to a file. Keep it safe \u2014 you can restore it anytime, even on a new phone or after reinstalling.";
+const APP_MONETIZATION = {
+  model: 'free', // 'paid' or 'free' \u2014 controls the section label below
+  blurb: "Kept is free to use, always. If it's meant something to you, a contribution below helps keep EGS independent \u2014 but there's never any obligation, and this app will never hold your memories behind a paywall."
+};
+
+function renderSupport(){
+  const tabs=PAYMENT_TABS.map(t=>`<button class="btn sm ${t.id===supportTab?'primary':''}" data-pay-tab="${t.id}">${t.label}</button>`).join('');
+  return `<div class="topbar">
+    <button class="icon-btn" data-back aria-label="Back">${I.back}</button>
+    <div class="grow"><span class="eyebrow">${esc(APP_NAME)}</span><h1>Support &amp; Backup</h1></div>
+  </div>
+  <div class="wrap">
+    <div class="sec-head"><span class="label">Back up your data</span><span class="rule"></span></div>
+    <div class="card muted" style="font-size:13.5px;line-height:1.6">${APP_BACKUP_DESC}</div>
+    <div class="row" style="gap:10px;margin:10px 0 22px">
+      <button class="btn primary" style="flex:1" data-export>${I.download} Export</button>
+      <label class="btn" style="flex:1;text-align:center;display:flex;align-items:center;justify-content:center;gap:8px">${I.upload} Restore<input type="file" accept="application/json,.json" hidden data-import></label>
+    </div>
+
+    <div class="sec-head"><span class="label">${APP_MONETIZATION.model==='paid'?'Pricing':'Free, always'}</span><span class="rule"></span></div>
+    <div class="card muted" style="font-size:13.5px;line-height:1.6">${APP_MONETIZATION.blurb}</div>
+
+    ${egsSupportCoreHtml(tabs)}
+  </div>`;
+}
+
+/* ============================================================
+   EGS CORE \u2014 SUPPORT SECTION
+   Copy this function verbatim into every new EGS app. Do not
+   edit the copy below \u2014 only PAYMENT_CONFIG (near the top of
+   the file) should ever change, and only to add real payment
+   links.
+   ============================================================ */
+function egsSupportCoreHtml(tabs){
+  return `<div class="sec-head"><span class="label">Support EGS</span><span class="rule"></span></div>
+    <div class="card muted" style="font-size:13.5px;line-height:1.6">Enlightened Global Solutions is a one-person, Canadian shop building tools the way I'd want them built \u2014 privacy-first, no subscriptions, no shortcuts. If this app has been useful to you, a contribution below helps keep it that way.</div>
+    <div class="row" data-go="privacy" style="cursor:pointer;margin:6px 0 18px"><span class="muted" style="font-size:13px">\ud83d\udd12 Our privacy promise &amp; how we make money \u2192</span></div>
+
+    <div class="row" style="gap:8px;flex-wrap:wrap;margin:4px 0 12px">${tabs}</div>
+    <div id="pay-detail">${paymentDetailHtml(supportTab)}</div>
+
+    <div class="card" style="margin-top:18px;text-align:center;font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:var(--paper-faint)">Built by one person in Canada \u00b7 no shareholders, no ads, ever<br>Contributions are voluntary. Every bit helps keep EGS independent. Thank you.</div>`;
+}
+
+function paymentDetailHtml(tab){
+  if(tab==='interac'){
+    return `<div class="card">
+      <div style="font-weight:600;margin-bottom:10px">Interac e-Transfer (Canada)</div>
+      <div class="row" style="margin-bottom:8px"><div class="grow muted" style="font-size:13px">Send to email</div></div>
+      <div class="row" style="margin-bottom:8px"><b style="font-size:14px">${PAYMENT_CONFIG.interacEmail}</b><button class="btn sm" data-copy="${PAYMENT_CONFIG.interacEmail}">Copy</button></div>
+      <div class="row" style="margin-bottom:6px"><div class="grow muted" style="font-size:13px">Message / memo</div><b style="font-size:13px">${PAYMENT_CONFIG.interacMemo}</b></div>
+      <div class="row"><div class="grow muted" style="font-size:13px">Auto-deposit</div><b style="font-size:13px;color:var(--accent)">Enabled</b></div>
+    </div>
+    <div class="muted" style="font-size:12.5px;text-align:center;margin-top:10px;line-height:1.5">Open your Canadian bank app \u2192 Interac e-Transfer \u2192 Send to the email above.<br>No password needed if auto-deposit is enabled. \ud83c\udf41</div>`;
+  }
+  if(tab==='btc'){
+    return `<div class="card">
+      <div style="font-weight:600;margin-bottom:10px">Bitcoin</div>
+      <div class="mono" style="font-size:12.5px;word-break:break-all;color:var(--paper-dim)">${PAYMENT_CONFIG.btc}</div>
+      <button class="btn sm block" style="margin-top:10px" data-copy="${PAYMENT_CONFIG.btc}">Copy address</button>
+    </div>
+    <div class="muted" style="font-size:12.5px;text-align:center;margin-top:10px">Send BTC to the address above from your wallet app.</div>`;
+  }
+  if(tab==='card'){
+    return `<a class="btn primary block" href="${PAYMENT_CONFIG.stripe}" target="_blank" rel="noopener">Open secure checkout</a>
+    <div class="muted" style="font-size:12.5px;text-align:center;margin-top:10px">Opens a secure checkout page in your browser. Card details never touch this app.</div>`;
+  }
+  if(tab==='paypal'){
+    return `<a class="btn primary block" href="${PAYMENT_CONFIG.paypal}" target="_blank" rel="noopener">Donate via PayPal</a>
+    <div class="muted" style="font-size:12.5px;text-align:center;margin-top:10px">Opens PayPal in your browser.</div>`;
+  }
+  if(tab==='wise'){
+    return `<a class="btn primary block" href="${PAYMENT_CONFIG.wise}" target="_blank" rel="noopener">Send via Wise</a>
+    <div class="muted" style="font-size:12.5px;text-align:center;margin-top:10px">Best for international transfers.</div>`;
+  }
+  return '';
+}
+
+function bindCopyButtons(scope){
+  scope.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{
+    try{ await navigator.clipboard.writeText(b.dataset.copy); toast('Copied'); }
+    catch(e){ toast('Could not copy \u2014 long-press the text to select it instead'); }
+  });
 }
 
 /* ---- bind ---- */
@@ -386,6 +528,12 @@ function bind(){
 
   const exp=$app.querySelector('[data-export]'); if(exp) exp.onclick=exportData;
   const imp=$app.querySelector('[data-import]'); if(imp) imp.onchange=importData;
+  $app.querySelectorAll('[data-pay-tab]').forEach(b=>b.onclick=()=>{
+    supportTab=b.dataset.payTab;
+    $app.querySelectorAll('[data-pay-tab]').forEach(x=>x.classList.toggle('primary',x.dataset.payTab===supportTab));
+    const detail=document.getElementById('pay-detail'); if(detail){ detail.innerHTML=paymentDetailHtml(supportTab); bindCopyButtons(detail); }
+  });
+  bindCopyButtons($app);
   const pin=$app.querySelector('[data-pin]'); if(pin) pin.onclick=setupPin;
   const pinOff=$app.querySelector('[data-pin-off]'); if(pinOff) pinOff.onclick=()=>{ if(confirm('Turn off the app lock?')){ settings.pinHash=null; settings.pinSalt=null; persist.settings(); render(); toast('App lock off'); } };
 }
