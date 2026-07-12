@@ -149,6 +149,15 @@
   #lock .mark svg{width:48px;height:48px}
   #lock input{width:200px;text-align:center;letter-spacing:.5em;font-size:22px;padding:14px 10px}
   #lock .err{color:var(--danger);font-size:13px;margin-top:10px;height:16px}
+
+  #install-banner{
+    position:fixed;left:12px;right:12px;bottom:calc(var(--safe-b) + 14px);z-index:40;
+    background:var(--ink-3);border:1px solid var(--line);border-radius:var(--radius);
+    padding:12px 10px 12px 16px;display:flex;align-items:center;gap:10px;
+    box-shadow:0 8px 24px rgba(0,0,0,.4);
+  }
+  #install-banner .txt{flex:1;font-size:13px;line-height:1.4;color:var(--paper-dim)}
+  #install-banner .txt b{color:var(--paper);display:block;font-family:var(--serif);font-size:15px;margin-bottom:2px}
 </style>
 </head>
 <body>
@@ -786,7 +795,7 @@ function randSalt(){ return [...crypto.getRandomValues(new Uint8Array(8))].map(b
 const $lock=document.getElementById('lock');
 function showShell(show){ document.getElementById('app').classList.toggle('hidden',!show); }
 function lockGate(){
-  if(!settings.pinHash){ $lock.classList.add('hidden'); showShell(true); render(); return; }
+  if(!settings.pinHash){ $lock.classList.add('hidden'); showShell(true); render(); maybeShowInstallPrompt(); return; }
   showShell(false); $fab.classList.add('hidden');
   $lock.classList.remove('hidden');
   const inp=document.getElementById('lock-pin'); const err=document.getElementById('lock-err');
@@ -794,9 +803,56 @@ function lockGate(){
   inp.oninput=async()=>{
     if(inp.value.length<4)return;
     const h=await sha(inp.value+settings.pinSalt);
-    if(h===settings.pinHash){ $lock.classList.add('hidden'); showShell(true); render(); }
+    if(h===settings.pinHash){ $lock.classList.add('hidden'); showShell(true); render(); maybeShowInstallPrompt(); }
     else{ err.textContent='Wrong PIN'; inp.value=''; }
   };
+}
+
+/* ---- Add to Home Screen prompt ---- */
+let deferredInstallPrompt=null;
+let installPromptShown=false;
+function isStandaloneApp(){ return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true; }
+function isIOSDevice(){ return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream; }
+function appUnlocked(){ return $lock.classList.contains('hidden'); }
+
+window.addEventListener('beforeinstallprompt', e=>{
+  e.preventDefault();
+  deferredInstallPrompt=e;
+  maybeShowInstallPrompt();
+});
+if(isIOSDevice()) setTimeout(maybeShowInstallPrompt,1200);
+
+function maybeShowInstallPrompt(){
+  if(installPromptShown||isStandaloneApp()||localStorage.getItem('installPromptDismissed')||!appUnlocked()) return;
+  if(deferredInstallPrompt) showInstallBanner('android');
+  else if(isIOSDevice()) showInstallBanner('ios');
+}
+function showInstallBanner(mode){
+  if(installPromptShown) return;
+  installPromptShown=true;
+  const el=document.createElement('div');
+  el.id='install-banner';
+  el.innerHTML = mode==='android'
+    ? `<div class="txt"><b>Add ${esc(APP_NAME)} to your home screen</b>Quick, quiet access \u2014 no app store needed.</div>
+       <button class="btn primary sm" id="install-go">Add</button>
+       <button class="icon-btn" id="install-x" aria-label="Dismiss" style="width:36px;height:36px;flex:none">${I.x}</button>`
+    : `<div class="txt"><b>Add ${esc(APP_NAME)} to your home screen</b>Tap Share, then "Add to Home Screen."</div>
+       <button class="icon-btn" id="install-x" aria-label="Dismiss" style="width:36px;height:36px;flex:none">${I.x}</button>`;
+  document.body.appendChild(el);
+  if(mode==='android'){
+    document.getElementById('install-go').onclick=async()=>{
+      if(!deferredInstallPrompt) return;
+      deferredInstallPrompt.prompt();
+      await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt=null;
+      dismissInstallBanner();
+    };
+  }
+  document.getElementById('install-x').onclick=dismissInstallBanner;
+}
+function dismissInstallBanner(){
+  const el=document.getElementById('install-banner'); if(el) el.remove();
+  localStorage.setItem('installPromptDismissed','1');
 }
 function setupPin(){
   sheet(`<h2>Set a PIN</h2>
