@@ -15,7 +15,7 @@
 <meta name="theme-color" content="#14161A">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
-<script>window.EGS_VERSION = '2026.07.21-0838';</script>
+<script>window.EGS_VERSION = '2026.07.21-0844';</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
@@ -310,7 +310,7 @@ function render(){
 }
 
 function renderHome(){
-  const head=`<div class="topbar"><div class="grow"><span class="eyebrow">${esc(APP_NAME)}</span><h1>Your People</h1></div>
+  const head=`<div class="topbar"><div class="grow"><span class="eyebrow">${esc(APP_NAME)}</span><h1>Your People *</h1></div>
     <button class="icon-btn" data-go="settings" aria-label="Settings">${I.gear}</button></div>`;
   if(!people.length) return head+`<div class="empty">${I.feather}<div class="t">A quiet place, kept</div><div>Add someone you've loved — their photos and the moments you want close, on your own terms.</div></div>`;
   const sorted=[...people].sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
