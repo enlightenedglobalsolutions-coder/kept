@@ -15,7 +15,7 @@
 <meta name="theme-color" content="#14161A">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
-<script>window.EGS_VERSION = '2026.08.01-1131';</script>
+<script>window.EGS_VERSION = '2026.08.01-1149';</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <!-- share preview -->
@@ -221,7 +221,8 @@ const I = {
   rotate:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>'
 };
 
-const K={people:'kept.people',memories:'kept.memories',settings:'kept.settings'};
+/* every key is app-prefixed: all EGS apps share one origin, so one localStorage */
+const K={people:'kept.people',memories:'kept.memories',settings:'kept.settings',installDismissed:'kept.installPromptDismissed'};
 function load(k,f){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):f; }catch(e){ return f; } }
 function safeSave(key,value){
   const existing=localStorage.getItem(key);
@@ -831,7 +832,7 @@ window.addEventListener('beforeinstallprompt', e=>{
 if(isIOSDevice()) setTimeout(maybeShowInstallPrompt,1200);
 
 function maybeShowInstallPrompt(){
-  if(installPromptShown||isStandaloneApp()||localStorage.getItem('installPromptDismissed')||!appUnlocked()) return;
+  if(installPromptShown||isStandaloneApp()||localStorage.getItem(K.installDismissed)||!appUnlocked()) return;
   if(deferredInstallPrompt) showInstallBanner('android');
   else if(isIOSDevice()) showInstallBanner('ios');
 }
@@ -860,7 +861,7 @@ function showInstallBanner(mode){
 }
 function dismissInstallBanner(){
   const el=document.getElementById('install-banner'); if(el) el.remove();
-  localStorage.setItem('installPromptDismissed','1');
+  localStorage.setItem(K.installDismissed,'1');
 }
 function setupPin(){
   sheet(`<h2>Set a PIN</h2>
