@@ -15,7 +15,20 @@
 <meta name="theme-color" content="#14161A">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
-<script>window.EGS_VERSION = '2026.08.01-1149';</script>
+<script>window.EGS_VERSION = '2026.08.05-1336';</script>
+<!-- EGS-STD:coldopen-version -->
+<script>
+/* One source for every visible stamp. Runs on DOMContentLoaded so the lock
+   screen carries it too — that is the only screen a returning PIN user sees
+   before unlocking, and the shell behind it is covered by an opaque overlay. */
+document.addEventListener('DOMContentLoaded', function () {
+  var v = window.EGS_VERSION || 'dev build';
+  var els = document.querySelectorAll('[data-egs-version]');
+  for (var i = 0; i < els.length; i++) {
+    els[i].textContent = 'Kept \u00b7 EGS \u00b7 v' + v;
+  }
+});
+</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <!-- share preview -->
@@ -173,8 +186,10 @@
   <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-7.5-4.6-9.6-9.4C.8 7.8 3 4 6.6 4c2 0 3.4 1 4.4 2.4C12 4.9 13.4 4 15.4 4 19 4 21.2 7.8 19.6 11.6 17.5 16.4 12 21 12 21z"/></svg></div>
   <input type="password" inputmode="numeric" id="lock-pin" placeholder="••••" maxlength="8">
   <div class="err" id="lock-err"></div>
+  <div data-egs-version style="font-size:10px;letter-spacing:.06em;opacity:.55;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;text-align:center;margin-top:26px">—</div>
 </div>
 <div id="app"></div>
+<div data-egs-version style="font-size:10px;letter-spacing:.06em;opacity:.55;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;text-align:center;padding:18px 0 26px">—</div>
 <div id="modal-root"></div>
 <div id="viewer" class="hidden"></div>
 <div id="toast"></div>
